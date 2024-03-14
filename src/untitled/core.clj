@@ -29,8 +29,8 @@
         (struct Binding '/ (struct PrimV '/))
         (struct Binding '<= (struct PrimV '<=))
         (struct Binding 'equal? (struct PrimV 'are-equal?))
-        (struct Binding 'true (struct BoolV true))
-        (struct Binding 'false (struct BoolV false))
+        (struct Binding 'trueV (struct BoolV true))
+        (struct Binding 'falseV (struct BoolV false))
         (struct Binding 'error (struct PrimV 'user-error))))
 
 
@@ -52,6 +52,10 @@
   (match f-val
          {:op op} (apply-primop op arg-vals)))
 
+(defn ifC-helper [test]
+  (match test
+         {:bool b} b))
+
 (defn interp
   "interp"
   [expr env]
@@ -61,6 +65,26 @@
          [{:args f :body b} e] (struct CloV f b e)
          [{:idC i} e] (lookup i e)
          [{:func func :args args} e] (appC-helper (interp func e) (map #(interp % e) args))
+         [{:test test :then then :else else} e] (if (ifC-helper (interp test e)) (interp then e) (interp else e))
          :else "couldn't match")
   ; add more operations
   )
+
+;; test examples
+
+;; num case
+(= (interp (struct NumC 2) top-level-bindings) (struct NumV 2))
+
+;; str case
+(= (interp (struct StrC "hi") top-level-bindings) (struct StrV "hi"))
+
+;; lamC case
+(= (interp (struct LamC (list (struct IdC 'a) (struct IdC 'b)) (struct AppC (struct IdC '+) (list (struct NumC 2) (struct NumC 3)))) top-level-bindings) (struct CloV (list (struct IdC 'a) (struct IdC 'b)) (struct AppC (struct IdC '+) (list (struct NumC 2) (struct NumC 3))) top-level-bindings))
+
+;; idC/AppC case and apply-primop/lookup addition
+(= (interp (struct IdC '+) top-level-bindings) (struct PrimV '+))
+(= (interp (struct AppC (struct IdC '+) (list (struct NumC 3) (struct NumC 8))) top-level-bindings) 11)
+(= (interp (struct AppC (struct IdC '-) (list (struct NumC 3) (struct NumC 8))) top-level-bindings) -5)
+
+;; if case
+(= (interp (struct IfC (struct IdC 'trueV) (struct StrC "hi") (struct StrC "else")) top-level-bindings) (struct StrV "hi"))
