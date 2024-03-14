@@ -40,13 +40,15 @@
       (:value binding)
       nil)))
 
-;(defn apply-primop
-;  [op args]
-;  (case op
-;    '+ (reduce + (map :num args))
-;    '- (reduce - (map :num args))
-;    ; Add on here
-;    ))
+(defn apply-primop
+  [op args]
+  (match op
+         '+ (reduce + (map :numC args))
+         '- (reduce - (map :numC args)))
+  ; Add on here
+  )
+
+
 
 (defn interp
   "interp"
