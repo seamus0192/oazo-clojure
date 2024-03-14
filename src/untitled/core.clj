@@ -2,7 +2,7 @@
 (require '[clojure.core.match :refer [match]])
 
 (defstruct NumC :numC)
-(defstruct IdC :IdC)
+(defstruct IdC :idC)
 (defstruct AppC :func :args)
 (defstruct StrC :strC)
 (defstruct LamC :args :body)
@@ -19,23 +19,23 @@
 (defstruct person :name :age :height)
 
 (defstruct Binding :name :value)
+(struct Binding 'a 10)
 (defstruct Env :bindings)
 
 
-(defn lookup
-  [name env]
-  (let [binding (some #(when (= name (:name %)) %) (:bindings env))]
+(defn lookup [symbol bindings]
+  (let [binding (first (filter #(= (:name %) symbol) bindings))]
     (if binding
       (:value binding)
-      (throw (Exception. "Name not found")))))
+      nil)))
 
-(defn apply-primop
-  [op args]
-  (case op
-    '+ (reduce + (map :num args))
-    '- (reduce - (map :num args))
-    ; Add on here
-    ))
+;(defn apply-primop
+;  [op args]
+;  (case op
+;    '+ (reduce + (map :num args))
+;    '- (reduce - (map :num args))
+;    ; Add on here
+;    ))
 
 (defn interp
   "interp"
@@ -43,6 +43,7 @@
   (match [expr env]
          [{:numC a} _] (struct NumV a)
          [{:strC s} _] (struct StrV s)
+         ;[{:args f :body b} e] (struct CloV args body env)
          [{:idC i} e] (lookup i e)
          :else "couldn't match")
   ; add more operations
