@@ -22,6 +22,17 @@
 (struct Binding 'a 10)
 (defstruct Env :bindings)
 
+(def top-level-bindings
+  (list (struct Binding '+ (struct PrimV '+))
+        (struct Binding '- (struct PrimV '-))
+        (struct Binding '* (struct PrimV '*))
+        (struct Binding '/ (struct PrimV '/))
+        (struct Binding '<= (struct PrimV '<=))
+        (struct Binding 'equal? (struct PrimV 'are-equal?))
+        (struct Binding 'true (struct BoolV true))
+        (struct Binding 'false (struct BoolV false))
+        (struct Binding 'error (struct PrimV 'user-error))))
+
 
 (defn lookup [symbol bindings]
   (let [binding (first (filter #(= (:name %) symbol) bindings))]
