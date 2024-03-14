@@ -43,12 +43,14 @@
 (defn apply-primop
   [op args]
   (match op
-         '+ (reduce + (map :numC args))
-         '- (reduce - (map :numC args)))
+         '+ (reduce + (map :num args))
+         '- (reduce - (map :num args)))
   ; Add on here
   )
 
-
+(defn appC-helper [f-val arg-vals]
+  (match f-val
+         {:op op} (apply-primop op arg-vals)))
 
 (defn interp
   "interp"
@@ -56,8 +58,9 @@
   (match [expr env]
          [{:numC a} _] (struct NumV a)
          [{:strC s} _] (struct StrV s)
-         ;[{:args f :body b} e] (struct CloV args body env)
+         [{:args f :body b} e] (struct CloV f b e)
          [{:idC i} e] (lookup i e)
+         [{:func func :args args} e] (appC-helper (interp func e) (map #(interp % e) args))
          :else "couldn't match")
   ; add more operations
   )
