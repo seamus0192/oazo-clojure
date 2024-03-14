@@ -21,18 +21,29 @@
 (defstruct Binding :name :value)
 (defstruct Env :bindings)
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+
+(defn lookup
+  [name env]
+  (let [binding (some #(when (= name (:name %)) %) (:bindings env))]
+    (if binding
+      (:value binding)
+      (throw (Exception. "Name not found")))))
+
+(defn apply-primop
+  [op args]
+  (case op
+    '+ (reduce + (map :num args))
+    '- (reduce - (map :num args))
+    ; Add on here
+    ))
 
 (defn interp
   "interp"
-  [expr]
-  (match expr
-         {:numC a} (struct NumV a)
-         {:strC s} (struct StrV s)
+  [expr env]
+  (match [expr env]
+         [{:numC a} _] (struct NumV a)
+         [{:strC s} _] (struct StrV s)
+         [{:idC i} e] (lookup i e)
          :else "couldn't match")
+  ; add more operations
   )
-
-
