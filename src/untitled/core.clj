@@ -1,5 +1,6 @@
 (ns untitled.core)
 (require '[clojure.core.match :refer [match]])
+(declare interp)
 
 (defstruct NumC :numC)
 (defstruct IdC :idC)
@@ -34,6 +35,23 @@
         (struct Binding 'error (struct PrimV 'user-error))))
 
 
+
+
+(defn parse [sexp]
+  (match sexp
+         ;NumC
+         {:real r} (struct NumC r)
+         ;IdC
+         {:symbol s} (struct IdC s)
+         ;StrC
+         {:string s} (struct StrV s)
+         ;IfC
+         {:sym 'if :test cond :symb 'then :then  t :symbol 'else :else e } (struct IfC cond (parse t) (parse e))
+         ;LamC
+         {:sym 'anon :func f :symb ::colon :body b } (struct LamC f (parse b))
+         ;AppC
+          {:func f :args a} (struct AppC (parse f) (map parse a))
+         ))
 (defn lookup [symbol bindings]
   (let [binding (first (filter #(= (:name %) symbol) bindings))]
     (if binding
@@ -43,10 +61,10 @@
 (defn apply-primop
   [op args]
   (match op
-         '+ (NumV (reduce + 0 (map :num args)))
-         '- (NumV (reduce - (:num (first args)) (map :num (rest args))))
-         '* (NumV (reduce * 1 (map :num args)))
-         '/ (NumV (reduce (fn [x y] (/ y x))
+         '+ (struct NumV (reduce + 0 (map :num args)))
+         '- (struct NumV (reduce - (:num (first args)) (map :num (rest args))))
+         '* (struct NumV (reduce * 1 (map :num args)))
+         '/ (struct NumV (reduce (fn [x y] (/ y x))
                           (:num (first args))
                           (map :num (rest args))))
          '<= (BoolV (<= (:num (first args)) (:num (second args))))
@@ -69,6 +87,18 @@
 (defn ifC-helper [test]
   (match test
          {:bool b} b))
+(defn appC-helper [f-val arg-vals]
+  (match f-val
+         ; PrimV
+         {:op op} (apply-primop op arg-vals)
+         ;CloV
+         {:args f-args :body f-body :env f-env}
+         (if (= (count f-args) (count arg-vals))
+           (let [new-bindings (map (fn [arg val] [arg val]) f-args arg-vals)
+                 new-env (concat f-env new-bindings)]
+             (interp f-body new-env))
+           (throw (Exception. "Argument count mismatch")))))
+
 
 (defn interp
   "interp"
@@ -100,3 +130,6 @@
 
 ;; if case
 (= (interp (struct IfC (struct IdC 'trueV) (struct StrC "hi") (struct StrC "else")) top-level-bindings) (struct StrV "hi"))
+
+
+;(= (parse (list + 4 5)) (AppC (Struct IdC '+) (list (struct NumC 4) (struct NumC 5))))
