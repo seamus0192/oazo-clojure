@@ -43,14 +43,28 @@
 (defn apply-primop
   [op args]
   (match op
-         '+ (reduce + (map :num args))
-         '- (reduce - (map :num args)))
-  ; Add on here
-  )
+         '+ (NumV (reduce + 0 (map :num args)))
+         '- (NumV (reduce - (:num (first args)) (map :num (rest args))))
+         '* (NumV (reduce * 1 (map :num args)))
+         '/ (NumV (reduce (fn [x y] (/ y x))
+                          (:num (first args))
+                          (map :num (rest args))))
+         '<= (BoolV (<= (:num (first args)) (:num (second args))))
+         'are-equal? (BoolV (= (first args) (second args)))
+         ;'user-error (ErrV (user-error (first args)))
+         ))
 
 (defn appC-helper [f-val arg-vals]
   (match f-val
-         {:op op} (apply-primop op arg-vals)))
+         ; PrimV
+         {:op op} (apply-primop op arg-vals)
+         ;CloV
+         {:args f-args :body f-body :env f-env}
+         (if (= (count f-args) (count arg-vals))
+           (let [new-bindings (map (fn [arg val] [arg val]) f-args arg-vals)
+                 new-env (assoc f-env new-bindings)]
+             (interp f-body new-env))
+           (throw (Exception. "Argument count mismatch")))))
 
 (defn ifC-helper [test]
   (match test
@@ -66,9 +80,7 @@
          [{:idC i} e] (lookup i e)
          [{:func func :args args} e] (appC-helper (interp func e) (map #(interp % e) args))
          [{:test test :then then :else else} e] (if (ifC-helper (interp test e)) (interp then e) (interp else e))
-         :else "couldn't match")
-  ; add more operations
-  )
+         :else "couldn't match"))
 
 ;; test examples
 
